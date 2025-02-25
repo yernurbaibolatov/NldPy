@@ -14,6 +14,7 @@ def solve(system_func, t, x, params, t_run, t_trans=0, dt=1e-4, solver='RK45'):
     Solve the system in a given time span
 
     Parameters:
+        system_func: a callable function
         t: float - initial time (note that it must not be 0)
         x: array(float) - initial state vector of the system
         params: array(float) - parameters of the system
@@ -28,6 +29,9 @@ def solve(system_func, t, x, params, t_run, t_trans=0, dt=1e-4, solver='RK45'):
         and an array of velocity vectors
         from [t+t_trans] to [t+t_trans+t_run]
     """
+    if isinstance(x, float) or isinstance(x, int):
+        x = np.array([x])
+
     t_span = np.arange(t, t+t_trans+t_run, dt)
     x_sol = np.zeros((len(t_span), len(x)), dtype=np.float64)
     v_sol = np.zeros((len(t_span), len(x)), dtype=np.float64)
@@ -45,4 +49,54 @@ def solve(system_func, t, x, params, t_run, t_trans=0, dt=1e-4, solver='RK45'):
 
     return t_run_sol, x_run_sol, v_sun_sol
 
+def root_boundaries_1d(system_func, params, a, b, n_brac = 20):
+    """
+    Finds the brackets [x1, x2] where there is at least one root exists.
 
+    Parameters:
+        system_func: a callable function
+        params: parameters of the system
+        a: left boundary of the search domain
+        b: right boundary of the search domain
+        n_brac: number of subdomains, in which the roots are searched
+
+    Return:
+        array[[xl, xr]]: an array of subdomains (xl, xr)
+    """
+    if a == b:
+        raise ValueError("Parameters a and b should not be equal")
+    elif a > b:
+        a, b = b, a
+
+    x_domains = np.linspace(a, b, n_brac)
+    x_brackets = []
+
+    for i in range(1, len(x_domains)):
+        xl, xr = x_domains[i-1], x_domains[i]
+        if system_func(0, xl, params)[0]*system_func(0, xr, params)[0] < 0:
+            x_brackets.append([xl, xr])
+    
+    return x_brackets
+
+def bisection_root(system_func, params, a, b, acc):
+    """
+    Finds the root of the function within [a,b] with given
+    accuracy using the bisection method. 
+    Needs to be called after the root_boundaries_1d
+
+    Return:
+        float: the root of the function with given accuracy:
+            |f(x, params)| < acc
+    """
+    xl, xr = a, b
+    x = (xl + xr)/2
+
+    while np.abs(system_func(0, x, params)[0]) > acc:
+        if system_func(0, x, params)[0]*system_func(0, xl, params)[0] < 0:
+            xl, xr = xl, x
+        else:
+            xl, xr = x, xr 
+        
+        x = (xl + xr)/2
+
+    return x

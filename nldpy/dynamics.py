@@ -1,5 +1,5 @@
 import numpy as np
-from nldpy import solve
+from nldpy import solve, root_boundaries_1d, bisection_root
 
 class DynamicalSystem:
     def __init__(self, system, t0, x0, params):
@@ -26,9 +26,9 @@ class DynamicalSystem:
 
         # trajectory of the latest integration
         self.t_sol = np.zeros(0, dtype=np.float64)
-        self.x_sol = np.zeros((0, len(x0)), dtype=np.float64)
-        self.v_sol = np.zeros((0, len(x0)), dtype=np.float64)
-
+        self.x_sol = np.zeros(0, dtype=np.float64)
+        self.v_sol = np.zeros(0, dtype=np.float64)
+        
 
     def set_state(self, t0, x0):
         """
@@ -77,3 +77,40 @@ class DynamicalSystem:
         
         self.x_sol = self.x_sol.transpose()
         self.v_sol = self.v_sol.transpose()
+
+
+class OneDimensionalDS(DynamicalSystem):
+    # 1D system cannot be explicitly time dependent
+    def __init__(self, system, x0, params):
+        
+        def wrapper_func(t, x, p):
+            return system(x, p)
+        super().__init__(wrapper_func, 0, x0, params)
+
+        if not (isinstance(x0, float) or isinstance(x0, int)):
+            raise TypeError("Initial condition should be 1D")
+
+        if len(self.system(0, x0, params)) > 1:
+            raise TypeError("System return value should be 1D")
+        
+    def fixed_points(self, a, b):
+        """
+        Looks for the fixed points of the system
+            f(x, params) = 0, for x from a to b
+        
+        Return:
+            array[float] - values of fixed points up to the accuracy
+            |f(x, paramas)| < acc
+        """
+
+        fp = []
+        root_boundaries = root_boundaries_1d(self.system, self.params, a, b, 20)
+
+        for interval in root_boundaries:
+            x_root = bisection_root(self.system, self.params,
+                                    interval[0], interval[1], self.acc)
+            
+            fp.append(x_root)
+        
+        return fp
+
