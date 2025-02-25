@@ -1,0 +1,14 @@
+Metadata-Version: 2.2
+Name: nldpy
+Version: 0.1.0
+Summary: Numerical analysis of nonlinear dynamical systems
+Home-page: https://github.com/yernurbaibolatov/NldPy
+Author: Yernur Baibolatov
+Author-email: yernurb@gmail.com
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: summary
