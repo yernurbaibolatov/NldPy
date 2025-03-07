@@ -4,7 +4,7 @@ setup(
     name="nldpy",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=["numpy", "matplotlib"],
+    install_requires=["numpy", "matplotlib", "scienceplots"],
     description="Numerical analysis of nonlinear dynamical systems",
     author="Yernur Baibolatov",
     author_email="yernurb@gmail.com",

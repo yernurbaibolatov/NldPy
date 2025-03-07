@@ -49,9 +49,9 @@ def solve(system_func, t, x, params, t_run, t_trans=0, dt=1e-4, solver='RK45'):
 
     return t_run_sol, x_run_sol, v_sun_sol
 
-def root_boundaries_1d(system_func, params, a, b, n_brac = 20):
+def root_boundaries_1d(system_func, params, xrange, n_brac = 20):
     """
-    Finds the brackets [x1, x2] where there is at least one root exists.
+    Finds the brackets [xrange[0], xrange[1]] where there is at least one root exists.
 
     Parameters:
         system_func: a callable function
@@ -63,6 +63,7 @@ def root_boundaries_1d(system_func, params, a, b, n_brac = 20):
     Return:
         array[[xl, xr]]: an array of subdomains (xl, xr)
     """
+    a, b = xrange[0], xrange[1]
     if a == b:
         raise ValueError("Parameters a and b should not be equal")
     elif a > b:
@@ -78,9 +79,9 @@ def root_boundaries_1d(system_func, params, a, b, n_brac = 20):
     
     return x_brackets
 
-def bisection_root(system_func, params, a, b, acc):
+def bisection_root(system_func, params, xrange, acc):
     """
-    Finds the root of the function within [a,b] with given
+    Finds the root of the function within [xrange[0],xrange[1]] with given
     accuracy using the bisection method. 
     Needs to be called after the root_boundaries_1d
 
@@ -88,7 +89,7 @@ def bisection_root(system_func, params, a, b, acc):
         float: the root of the function with given accuracy:
             |f(x, params)| < acc
     """
-    xl, xr = a, b
+    xl, xr = xrange[0], xrange[1]
     x = (xl + xr)/2
 
     while np.abs(system_func(0, x, params)[0]) > acc:
@@ -100,3 +101,15 @@ def bisection_root(system_func, params, a, b, acc):
         x = (xl + xr)/2
 
     return x
+
+def derivative_2(system, x0, params, h, var_idx=0):
+    xf, xb = x0, x0
+    print(xf, xb)
+    xf[var_idx] += h
+    xb[var_idx] -= h
+    print(xf, xb)
+
+    ff = system(xf, params)
+    fb = system(xb, params)
+
+    return (ff - fb)/(2*h)

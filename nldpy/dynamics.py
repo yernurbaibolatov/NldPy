@@ -1,5 +1,18 @@
 import numpy as np
 from nldpy import solve, root_boundaries_1d, bisection_root
+import matplotlib.pyplot as plt
+from cycler import cycler
+import scienceplots
+
+# nice colors for plotting
+PLOT_COLORS = [
+    '#344965', # Indigo dye
+    '#FF6665', # Bittersweet
+    '#1D1821', # Rich black
+    '#54D6BE', # Turquoise
+    '#E5AACE'  # Lavender pink
+]
+
 
 class DynamicalSystem:
     def __init__(self, system, t0, x0, params):
@@ -11,6 +24,27 @@ class DynamicalSystem:
         self.acc = 1e-8 # values less than acc are considered 0
         self.solver = 'RK45' # ODE solver algorithm
 
+        self.plot_pts = 1000 # number of points on plots
+        plt.style.use(['science', 'nature'])
+
+        plt.rcParams.update({
+            # Figure and layout
+            'figure.figsize': [12, 6],                 # Default figure size
+            'axes.prop_cycle': cycler(color=PLOT_COLORS),  # Custom color cycle for lines
+            'lines.linewidth': 2.0,                   # Line width
+            'lines.markersize': 8,                    # Marker size
+            # Grid
+            #'axes.grid': True,                        # Enable grid
+            #'grid.alpha': 0.7,                        # Transparency of grid lines
+            #'grid.linestyle': '--',                   # Dashed grid lines
+            #'grid.linewidth': 0.6,                    # Grid line width
+
+            # Colormap (for plots like heatmaps)
+            'image.cmap': 'viridis',                  # Default colormap
+            'image.interpolation': 'nearest',         # No smoothing in heatmaps
+        })
+
+        # system parameters
         self.system = system
         self.params = params
 
@@ -84,7 +118,7 @@ class OneDimensionalDS(DynamicalSystem):
     def __init__(self, system, x0, params):
         
         def wrapper_func(t, x, p):
-            return system(x, p)
+            return np.array([system(x, p)])
         super().__init__(wrapper_func, 0, x0, params)
 
         if not (isinstance(x0, float) or isinstance(x0, int)):
@@ -104,13 +138,51 @@ class OneDimensionalDS(DynamicalSystem):
         """
 
         fp = []
-        root_boundaries = root_boundaries_1d(self.system, self.params, a, b, 20)
+        root_boundaries = root_boundaries_1d(self.system, self.params, 
+                                             [a, b], 20)
 
         for interval in root_boundaries:
             x_root = bisection_root(self.system, self.params,
-                                    interval[0], interval[1], self.acc)
-            
+                                    interval, self.acc)     
+                   
             fp.append(x_root)
         
         return fp
 
+    def plot_fixed_points(self, a, b):
+        # Plots the flow diagram of the 1D system
+        fp = self.fixed_points(a, b)
+        x_vals = np.linspace(a, b, self.plot_pts)
+        f_vals = self.system(0, x_vals, self.params)[0]
+
+        # Compute directional flow (left or right)
+        #flow = np.sign(f_vals)
+
+        y_max = f_vals.max() + 0.1*(f_vals.max()-f_vals.min())
+        y_min = f_vals.min() - 0.1*(f_vals.max()-f_vals.min())
+
+        plt.figure()
+        plt.axhline(0, lw = 1, linestyle='--', c = PLOT_COLORS[2])
+        plt.plot(x_vals, f_vals, c = PLOT_COLORS[1])
+
+        # Mark fixed points
+        for p in fp:
+            plt.scatter(p, 0, color='red', zorder=3, label='Fixed Point' if
+                        'Fixed Point' not in plt.gca().get_legend_handles_labels()[1] else "")
+
+        # Add flow direction arrows
+        #for i in range(0, len(x_vals)-1, max(1, self.plot_pts // 10)):
+        #    plt.arrow(x_vals[i], 0, 0.8 * flow[i], 0, color=PLOT_COLORS[0],
+        #              zorder=4, head_width=0.5, head_length=0.5, lw = 2)
+
+
+        plt.title("Fixed points and 1D flow diagram")
+        plt.xlabel("x")
+        plt.ylabel("f(x)")
+
+        plt.xlim(a, b)
+        plt.ylim(y_min, y_max)
+
+        plt.legend()
+
+        plt.show()
